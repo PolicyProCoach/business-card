@@ -884,6 +884,7 @@
 <div class="action-row">
   <button class="action-btn primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
   <button class="action-btn secondary" onclick="downloadCard()">⬇ Save as Image</button>
+  <button class="action-btn secondary" onclick="downloadLinkedInCover()">🖼️ Download LinkedIn Cover</button>
   <button class="action-btn secondary" onclick="downloadVCF()">📇 Save Contact (VCF)</button>
   <button class="action-btn secondary" onclick="shareWhatsApp()">📱 Share on WhatsApp</button>
   <button class="action-btn secondary" onclick="shareSMS()">💬 Share via SMS</button>
@@ -981,6 +982,69 @@
       console.error('Error generating image:', err);
       alert('Error generating image. Please try using Print → Save as PDF instead.');
       btn.textContent = '⬇ Save as Image';
+      btn.disabled = false;
+    });
+  }
+
+  function downloadLinkedInCover() {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Generating...';
+    btn.disabled = true;
+
+    const currentActiveView = document.querySelector('.card-view.active');
+    const businessView = document.getElementById('view-business');
+    const businessCard = businessView ? businessView.querySelector('.card-business') : null;
+
+    if (!businessView || !businessCard) {
+      alert('Business card not found for LinkedIn cover export.');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+
+    const wasBusinessActive = businessView.classList.contains('active');
+    if (!wasBusinessActive && currentActiveView) {
+      currentActiveView.classList.remove('active');
+      businessView.classList.add('active');
+    }
+
+    html2canvas(businessCard, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      logging: false,
+      useCORS: true
+    }).then(cardCanvas => {
+      const coverCanvas = document.createElement('canvas');
+      coverCanvas.width = 1584;
+      coverCanvas.height = 396;
+      const ctx = coverCanvas.getContext('2d');
+
+      ctx.fillStyle = '#0d1f3c';
+      ctx.fillRect(0, 0, coverCanvas.width, coverCanvas.height);
+
+      const margin = 28;
+      const maxCardHeight = coverCanvas.height - (margin * 2);
+      const targetHeight = Math.min(maxCardHeight, cardCanvas.height);
+      const targetWidth = (cardCanvas.width / cardCanvas.height) * targetHeight;
+      const x = Math.round((coverCanvas.width - targetWidth) / 2);
+      const y = Math.round((coverCanvas.height - targetHeight) / 2);
+
+      ctx.drawImage(cardCanvas, x, y, targetWidth, targetHeight);
+
+      const link = document.createElement('a');
+      link.download = 'pallavi-varshney-linkedin-cover.png';
+      link.href = coverCanvas.toDataURL('image/png');
+      link.click();
+    }).catch(err => {
+      console.error('Error generating LinkedIn cover:', err);
+      alert('Error generating LinkedIn cover image. Please try again.');
+    }).finally(() => {
+      if (!wasBusinessActive && currentActiveView) {
+        businessView.classList.remove('active');
+        currentActiveView.classList.add('active');
+      }
+      btn.textContent = originalText;
       btn.disabled = false;
     });
   }
